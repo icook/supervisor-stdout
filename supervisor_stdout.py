@@ -1,5 +1,13 @@
 import sys
 
+colors = ['\033[95m',
+          '\033[94m',
+          '\033[92m',
+          '\033[93m',
+          '\033[91m']
+last_color = -1
+processes = {}
+
 def write_stdout(s):
     sys.stdout.write(s)
     sys.stdout.flush()
@@ -17,9 +25,18 @@ def main():
         write_stdout('RESULT %s\n%s'%(len(data), data)) # transition from READY to ACKNOWLEDGED
 
 def event_handler(event, response):
+    global last_color
     line, data = response.split('\n', 1)
     headers = dict([ x.split(':') for x in line.split() ])
-    print '%s %s | %s'%(headers['processname'], headers['channel'], data),
+    if headers['processname'] not in processes:
+        last_color += 1
+        last_color %= len(colors)
+        processes[headers['processname']] = colors[last_color]
+    preamble = '{} {} {} \033[0m| '.format(processes[headers['processname']],
+                                           headers['processname'],
+                                           headers['channel'])
+    for line in data.splitlines():
+        print preamble + line
 
 if __name__ == '__main__':
     main()
